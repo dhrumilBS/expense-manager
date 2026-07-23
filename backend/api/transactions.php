@@ -11,32 +11,27 @@ function applyBalanceEffect(PDO $db, array $txn, bool $reverse = false): void
 {
     $sign = $reverse ? -1 : 1;
     $amount = (float) $txn['amount'];
+    $userId = $txn['user_id'];
 
     if ($txn['type'] === 'income' && $txn['account_id']) {
-        $db->prepare('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?')
-           ->execute([$sign * $amount, $txn['account_id']]);
+        $db->prepare('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ? AND user_id = ?')
+           ->execute([$sign * $amount, $txn['account_id'], $userId]);
     } elseif ($txn['type'] === 'expense' && $txn['account_id']) {
-        $db->prepare('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?')
-           ->execute([$sign * $amount, $txn['account_id']]);
+        $db->prepare('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ? AND user_id = ?')
+           ->execute([$sign * $amount, $txn['account_id'], $userId]);
     } elseif ($txn['type'] === 'transfer') {
         if ($txn['account_id']) {
-            $db->prepare('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?')
-               ->execute([$sign * $amount, $txn['account_id']]);
+            $db->prepare('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ? AND user_id = ?')
+               ->execute([$sign * $amount, $txn['account_id'], $userId]);
         }
         if ($txn['to_account_id']) {
-            $db->prepare('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?')
-               ->execute([$sign * $amount, $txn['to_account_id']]);
+            $db->prepare('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ? AND user_id = ?')
+               ->execute([$sign * $amount, $txn['to_account_id'], $userId]);
         }
     }
 }
 
-function ownsAccount(PDO $db, int $userId, ?int $accountId): bool
-{
-    if (!$accountId) return true;
-    $stmt = $db->prepare('SELECT id FROM accounts WHERE id = ? AND user_id = ?');
-    $stmt->execute([$accountId, $userId]);
-    return (bool) $stmt->fetch();
-}
+// ownsAccount / ownsCategory / ownsGroup now live in utils/helpers.php (shared with budgets.php).
 
 // ---------------------------------------------------------------
 // GET: list with filters + pagination
@@ -106,9 +101,14 @@ if (methodIs('POST')) {
     } else {
         if (!$accountId) sendError('account_id is required.', 422);
     }
+    $categoryId = isset($b['category_id']) ? (int)$b['category_id'] : null;
+    $expenseGroupId = isset($b['expense_group_id']) ? (int)$b['expense_group_id'] : null;
+
     if (!ownsAccount($db, $userId, $accountId) || !ownsAccount($db, $userId, $toAccountId)) {
         sendError('Account not found.', 404);
     }
+    if (!ownsCategory($db, $userId, $categoryId)) sendError('Category not found.', 404);
+    if (!ownsGroup($db, $userId, $expenseGroupId)) sendError('Expense group not found.', 404);
 
     $txnDate = cleanStr($b['txn_date'] ?? null, 30) ?: date('Y-m-d H:i:s');
 
@@ -119,14 +119,14 @@ if (methodIs('POST')) {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
         $stmt->execute([
             $userId, $type, $amount,
-            $b['expense_group_id'] ?? null, $b['category_id'] ?? null,
+            $expenseGroupId, $categoryId,
             $accountId, $toAccountId,
             cleanStr($b['payment_method'] ?? null, 60), $txnDate,
             cleanStr($b['description'] ?? null, 255), cleanStr($b['notes'] ?? null, 2000),
             cleanStr($b['receipt_path'] ?? null, 255), cleanStr($b['tags'] ?? null, 255),
         ]);
         $id = (int) $db->lastInsertId();
-        applyBalanceEffect($db, ['type' => $type, 'amount' => $amount, 'account_id' => $accountId, 'to_account_id' => $toAccountId]);
+        applyBalanceEffect($db, ['user_id' => $userId, 'type' => $type, 'amount' => $amount, 'account_id' => $accountId, 'to_account_id' => $toAccountId]);
         $db->commit();
         sendSuccess(['id' => $id], 201);
     } catch (Exception $e) {
@@ -152,22 +152,29 @@ if (methodIs('PUT')) {
     $amount = isset($b['amount']) ? (float)$b['amount'] : (float)$old['amount'];
     $accountId = array_key_exists('account_id', $b) ? (int)$b['account_id'] : $old['account_id'];
     $toAccountId = array_key_exists('to_account_id', $b) ? (int)$b['to_account_id'] : $old['to_account_id'];
+    $categoryId = array_key_exists('category_id', $b) ? (int)$b['category_id'] : $old['category_id'];
+    $expenseGroupId = array_key_exists('expense_group_id', $b) ? (int)$b['expense_group_id'] : $old['expense_group_id'];
     if ($amount <= 0) sendError('Amount must be greater than zero.', 422);
     if (!ownsAccount($db, $userId, $accountId) || !ownsAccount($db, $userId, $toAccountId)) sendError('Account not found.', 404);
+    if (!ownsCategory($db, $userId, $categoryId)) sendError('Category not found.', 404);
+    if (!ownsGroup($db, $userId, $expenseGroupId)) sendError('Expense group not found.', 404);
 
     $db->beginTransaction();
     try {
         applyBalanceEffect($db, $old, true); // reverse old
 
-        $fields = ['type = ?', 'amount = ?', 'account_id = ?', 'to_account_id = ?'];
-        $params = [$type, $amount, $accountId, $toAccountId];
-        foreach (['expense_group_id','category_id','payment_method','txn_date','description','notes','receipt_path','tags'] as $f) {
-            if (array_key_exists($f, $b)) { $fields[] = "$f = ?"; $params[] = $b[$f]; }
-        }
+        $fields = ['type = ?', 'amount = ?', 'account_id = ?', 'to_account_id = ?', 'category_id = ?', 'expense_group_id = ?'];
+        $params = [$type, $amount, $accountId, $toAccountId, $categoryId, $expenseGroupId];
+        if (array_key_exists('payment_method', $b)) { $fields[] = 'payment_method = ?'; $params[] = cleanStr($b['payment_method'], 60); }
+        if (array_key_exists('txn_date', $b)) { $fields[] = 'txn_date = ?'; $params[] = cleanStr($b['txn_date'], 30); }
+        if (array_key_exists('description', $b)) { $fields[] = 'description = ?'; $params[] = cleanStr($b['description'], 255); }
+        if (array_key_exists('notes', $b)) { $fields[] = 'notes = ?'; $params[] = cleanStr($b['notes'], 2000); }
+        if (array_key_exists('receipt_path', $b)) { $fields[] = 'receipt_path = ?'; $params[] = cleanStr($b['receipt_path'], 255); }
+        if (array_key_exists('tags', $b)) { $fields[] = 'tags = ?'; $params[] = cleanStr($b['tags'], 255); }
         $params[] = $id; $params[] = $userId;
         $db->prepare('UPDATE transactions SET ' . implode(', ', $fields) . ' WHERE id = ? AND user_id = ?')->execute($params);
 
-        applyBalanceEffect($db, ['type' => $type, 'amount' => $amount, 'account_id' => $accountId, 'to_account_id' => $toAccountId]); // apply new
+        applyBalanceEffect($db, ['user_id' => $userId, 'type' => $type, 'amount' => $amount, 'account_id' => $accountId, 'to_account_id' => $toAccountId]); // apply new
         $db->commit();
         sendSuccess([]);
     } catch (Exception $e) {

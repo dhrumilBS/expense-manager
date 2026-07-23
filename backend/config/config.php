@@ -18,9 +18,27 @@ define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
 
 // ---- Auth / JWT -------------------------------------------------
-// IMPORTANT: change this to a long random string in production.
-// Generate one with: php -r "echo bin2hex(random_bytes(32));"
-define('JWT_SECRET', getenv('JWT_SECRET') ?: 'random');
+// Prefer JWT_SECRET as an env var in production. If it isn't set, a random
+// secret is generated once and persisted to .jwt_secret (this folder is
+// already blocked from direct web access by .htaccess) so tokens stay
+// valid across requests. A hardcoded fallback like 'random' would let
+// anyone forge a token for any user id — never do that.
+function resolveJwtSecret(): string
+{
+    $envSecret = getenv('JWT_SECRET');
+    if ($envSecret) return $envSecret;
+
+    $secretFile = __DIR__ . '/.jwt_secret';
+    if (is_file($secretFile)) {
+        $stored = trim((string) file_get_contents($secretFile));
+        if ($stored !== '') return $stored;
+    }
+    $generated = bin2hex(random_bytes(32));
+    file_put_contents($secretFile, $generated, LOCK_EX);
+    @chmod($secretFile, 0600);
+    return $generated;
+}
+define('JWT_SECRET', resolveJwtSecret());
 define('JWT_TTL_SECONDS', 60 * 60 * 4);        // access token: 4 hours
 define('REFRESH_TTL_SECONDS', 60 * 60 * 24 * 30); // refresh token: 30 days
 

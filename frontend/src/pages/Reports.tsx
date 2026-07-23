@@ -29,7 +29,8 @@ export default function Reports() {
   const runReport = () => {
     setLoading(true);
     api.get('/transactions.php', { params: { ...activeParams(), limit: 500 } })
-      .then((r) => setRows(r.data.transactions))
+      .then((r) => setRows(r.data.transactions ?? []))
+      .catch(() => setRows([]))
       .finally(() => setLoading(false));
   };
 
@@ -120,7 +121,37 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="card p-0 overflow-x-auto">
+      {/* Mobile: stacked cards instead of a cramped horizontal-scroll table */}
+      <div className="card p-0 divide-y divide-line sm:hidden">
+        {loading ? (
+          <div className="text-center py-8 text-muted text-sm">Loading…</div>
+        ) : rows.length === 0 ? (
+          <div className="text-center py-8 text-muted text-sm">No results for these filters.</div>
+        ) : (
+          <>
+            {rows.map((r) => (
+              <div key={r.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-sm font-medium capitalize">{r.category_name || (r.type === 'transfer' ? 'Transfer' : r.type)}</span>
+                  <span className={`amount text-sm shrink-0 ${r.type === 'income' ? 'amount-income' : r.type === 'expense' ? 'amount-expense' : 'amount-transfer'}`}>
+                    {formatMoney(r.amount)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted truncate">
+                  {formatDate(r.txn_date)} · {r.account_name}{r.to_account_name ? ` → ${r.to_account_name}` : ''}
+                </p>
+                {r.description && <p className="text-xs text-muted mt-0.5 truncate">{r.description}</p>}
+              </div>
+            ))}
+            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium">
+              <span>Net (income − expense)</span>
+              <span className={`amount ${total >= 0 ? 'amount-income' : 'amount-expense'}`}>{formatMoney(total)}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="hidden sm:block card p-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-muted border-b border-line">
             <tr>

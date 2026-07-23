@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { api, apiErrorMessage } from '@/lib/api';
 import Modal from '@/components/ui/Modal';
+import SwipeToReveal from '@/components/ui/SwipeToReveal';
+import AmountInput from '@/components/ui/AmountInput';
 import { Plus, Pencil, Archive, Wallet, Landmark, CreditCard, Smartphone, QrCode, MoreHorizontal } from 'lucide-react';
 import { Account, AccountType } from '@/types';
 import { formatMoney } from '@/lib/format';
@@ -61,22 +63,31 @@ export default function Accounts() {
         {accounts.map((a) => {
           const Icon = TYPE_META[a.type].icon;
           return (
-            <div key={a.id} className="card group">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: a.color + '1A', color: a.color }}>
-                  <Icon size={18} />
+            <SwipeToReveal
+              key={a.id}
+              className="rounded-2xl"
+              actions={[
+                { icon: <Pencil size={16} />, label: 'Edit', onClick: () => openEdit(a), className: 'bg-ink/5 text-ink' },
+                { icon: <Archive size={16} />, label: 'Archive', onClick: () => archive(a.id), className: 'bg-expense text-white' },
+              ]}
+            >
+              <div className="card group">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: a.color + '1A', color: a.color }}>
+                    <Icon size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{a.name}</p>
+                    <p className="text-xs text-muted">{TYPE_META[a.type].label}</p>
+                  </div>
+                  <div className="hidden md:group-hover:flex gap-1">
+                    <button onClick={() => openEdit(a)} className="p-2 rounded-lg hover:bg-ink/5 text-muted"><Pencil size={15} /></button>
+                    <button onClick={() => archive(a.id)} className="p-2 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Archive size={15} /></button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{a.name}</p>
-                  <p className="text-xs text-muted">{TYPE_META[a.type].label}</p>
-                </div>
-                <div className="hidden group-hover:flex gap-1">
-                  <button onClick={() => openEdit(a)} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted"><Pencil size={15} /></button>
-                  <button onClick={() => archive(a.id)} className="p-1.5 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Archive size={15} /></button>
-                </div>
+                <p className="amount text-2xl font-semibold">{formatMoney(a.current_balance)}</p>
               </div>
-              <p className="amount text-2xl font-semibold">{formatMoney(a.current_balance)}</p>
-            </div>
+            </SwipeToReveal>
           );
         })}
         {accounts.length === 0 && <p className="text-sm text-muted col-span-full text-center py-10">No accounts yet — add cash, bank, or card accounts to get started.</p>}
@@ -97,8 +108,7 @@ export default function Accounts() {
           {!editing && (
             <div>
               <label className="label">Opening Balance</label>
-              <input className="input amount" type="number" step="0.01" value={form.opening_balance}
-                onChange={(e) => setForm((f) => ({ ...f, opening_balance: e.target.value }))} />
+              <AmountInput value={form.opening_balance} onChange={(n) => setForm((f) => ({ ...f, opening_balance: String(n) }))} />
             </div>
           )}
           <div>

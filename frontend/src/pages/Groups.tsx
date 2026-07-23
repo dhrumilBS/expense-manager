@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { api, apiErrorMessage } from '@/lib/api';
 import Modal from '@/components/ui/Modal';
+import SwipeToReveal from '@/components/ui/SwipeToReveal';
 import { Plus, Pencil, Trash2, Folder } from 'lucide-react';
 import { ExpenseGroup } from '@/types';
 
@@ -49,19 +50,28 @@ export default function Groups() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {groups.map((g) => (
-          <div key={g.id} className="card flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: g.color + '1A', color: g.color }}>
-              <Folder size={18} />
+          <SwipeToReveal
+            key={g.id}
+            className="rounded-2xl"
+            actions={[
+              { icon: <Pencil size={16} />, label: 'Edit', onClick: () => openEdit(g), className: 'bg-ink/5 text-ink' },
+              { icon: <Trash2 size={16} />, label: 'Delete', onClick: () => remove(g.id), className: 'bg-expense text-white' },
+            ]}
+          >
+            <div className="card flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: g.color + '1A', color: g.color }}>
+                <Folder size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{g.name}</p>
+                {!!g.is_default && <p className="text-xs text-muted">Default</p>}
+              </div>
+              <div className="hidden md:group-hover:flex gap-1">
+                <button onClick={() => openEdit(g)} className="p-2 rounded-lg hover:bg-ink/5 text-muted"><Pencil size={15} /></button>
+                <button onClick={() => remove(g.id)} className="p-2 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Trash2 size={15} /></button>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{g.name}</p>
-              {!!g.is_default && <p className="text-xs text-muted">Default</p>}
-            </div>
-            <div className="hidden group-hover:flex gap-1">
-              <button onClick={() => openEdit(g)} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted"><Pencil size={15} /></button>
-              <button onClick={() => remove(g.id)} className="p-1.5 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Trash2 size={15} /></button>
-            </div>
-          </div>
+          </SwipeToReveal>
         ))}
         {groups.length === 0 && <p className="text-sm text-muted col-span-full text-center py-10">No expense groups yet — add your first one.</p>}
       </div>

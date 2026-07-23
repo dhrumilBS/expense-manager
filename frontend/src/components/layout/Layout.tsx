@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, FolderKanban,
-  Tags, Wallet, PiggyBank, FileBarChart, BarChart3, Settings, LogOut, Receipt,
+  LayoutDashboard, ArrowLeftRight, FolderKanban, Plus,
+  Tags, Wallet, PiggyBank, FileBarChart, BarChart3, Settings, LogOut, Receipt, Menu,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
@@ -20,6 +20,11 @@ const NAV = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
+const TAB_BAR = [
+  { to: '/', label: 'Home', icon: LayoutDashboard, end: true },
+  { to: '/transactions', label: 'Txns', icon: Receipt },
+];
+
 export default function Layout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -27,7 +32,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex bg-paper">
-      {/* Sidebar */}
+      {/* Sidebar — always visible on desktop, off-canvas "More" panel on mobile */}
       <aside className={clsx(
         'fixed z-30 inset-y-0 left-0 w-64 bg-surface border-r border-line transform transition-transform lg:translate-x-0 lg:static',
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -79,14 +84,59 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <header className="h-16 flex items-center gap-3 px-4 lg:px-8 border-b border-line bg-surface/70 backdrop-blur sticky top-0 z-10">
-          <button className="lg:hidden btn-ghost p-2" onClick={() => setMobileOpen(true)}>☰</button>
-          <div className="flex-1" />
-        </header>
-        <main className="p-4 lg:p-8 max-w-7xl mx-auto">
+        <main className="p-4 pb-24 lg:p-8 lg:pb-8 max-w-7xl mx-auto">
           <Outlet />
         </main>
       </div>
+
+      {/* Bottom tab bar — mobile only */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 lg:hidden bg-surface border-t border-line pb-[env(safe-area-inset-bottom)]">
+        <div className="grid grid-cols-5 items-center h-16">
+          {TAB_BAR.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) => clsx(
+                'flex flex-col items-center justify-center gap-0.5 h-full text-[11px] font-medium',
+                isActive ? 'text-brand' : 'text-muted'
+              )}
+            >
+              <Icon size={20} strokeWidth={2} />
+              {label}
+            </NavLink>
+          ))}
+
+          <div className="flex items-center justify-center h-full">
+            <button
+              onClick={() => navigate('/transactions', { state: { openAdd: 'expense' } })}
+              className="w-12 h-12 -mt-6 rounded-full bg-brand text-white shadow-soft flex items-center justify-center active:scale-95 transition-transform"
+              aria-label="Add transaction"
+            >
+              <Plus size={24} />
+            </button>
+          </div>
+
+          <NavLink
+            to="/accounts"
+            className={({ isActive }) => clsx(
+              'flex flex-col items-center justify-center gap-0.5 h-full text-[11px] font-medium',
+              isActive ? 'text-brand' : 'text-muted'
+            )}
+          >
+            <Wallet size={20} strokeWidth={2} />
+            Accounts
+          </NavLink>
+
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 h-full text-[11px] font-medium text-muted"
+          >
+            <Menu size={20} strokeWidth={2} />
+            More
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }

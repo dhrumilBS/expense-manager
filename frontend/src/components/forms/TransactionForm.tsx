@@ -6,6 +6,7 @@ import { api, apiErrorMessage } from '@/lib/api';
 import { Transaction } from '@/types';
 import { useState } from 'react';
 import { todayInputValue } from '@/lib/format';
+import AmountInput from '@/components/ui/AmountInput';
 
 const schema = z.object({
   type: z.enum(['income', 'expense']),
@@ -24,8 +25,11 @@ type FormData = z.infer<typeof schema>;
 const PAYMENT_METHODS = ['Cash', 'Debit Card', 'Credit Card', 'UPI', 'Net Banking', 'Cheque', 'Other'];
 
 export default function TransactionForm({
-  defaultType = 'expense', existing, onSaved, onCancel,
-}: { defaultType?: 'income' | 'expense'; existing?: Transaction; onSaved: () => void; onCancel: () => void }) {
+  defaultType = 'expense', existing, onSaved, onCancel, initialCategoryId, initialDescription,
+}: {
+  defaultType?: 'income' | 'expense'; existing?: Transaction; onSaved: () => void; onCancel: () => void;
+  initialCategoryId?: number; initialDescription?: string;
+}) {
   const { accounts, categories, groups } = useAppStore();
   const [serverError, setServerError] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -47,6 +51,8 @@ export default function TransactionForm({
     } : {
       type: defaultType,
       txn_date: todayInputValue(),
+      category_id: initialCategoryId,
+      description: initialDescription ?? '',
     },
   });
 
@@ -98,7 +104,11 @@ export default function TransactionForm({
 
       <div>
         <label className="label">Amount</label>
-        <input className="input amount" type="number" step="0.01" placeholder="0.00" {...register('amount')} />
+        <AmountInput
+          value={watch('amount')}
+          onChange={(n) => setValue('amount', n, { shouldValidate: true })}
+          autoFocus
+        />
         {errors.amount && <p className="text-xs text-expense mt-1">{errors.amount.message}</p>}
       </div>
 

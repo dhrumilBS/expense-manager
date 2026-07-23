@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   color VARCHAR(20) DEFAULT '#3B5BA9',
   is_archived TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_archived (user_id, is_archived)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -65,7 +66,8 @@ CREATE TABLE IF NOT EXISTS categories (
   color VARCHAR(20) DEFAULT '#6B7280',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  UNIQUE KEY uniq_category_per_user (user_id, name, type)
+  UNIQUE KEY uniq_category_per_user (user_id, name, type),
+  INDEX idx_user_type (user_id, type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -94,7 +96,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
   FOREIGN KEY (to_account_id) REFERENCES accounts(id) ON DELETE SET NULL,
   INDEX idx_user_date (user_id, txn_date),
-  INDEX idx_user_type (user_id, type)
+  INDEX idx_user_type (user_id, type),
+  INDEX idx_user_category (user_id, category_id),
+  INDEX idx_user_account (user_id, account_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
@@ -112,7 +116,8 @@ CREATE TABLE IF NOT EXISTS budgets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
   FOREIGN KEY (expense_group_id) REFERENCES expense_groups(id) ON DELETE CASCADE,
-  UNIQUE KEY uniq_budget (user_id, category_id, expense_group_id, period_month, period_year)
+  UNIQUE KEY uniq_budget (user_id, category_id, expense_group_id, period_month, period_year),
+  INDEX idx_user_period (user_id, period_year, period_month)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------

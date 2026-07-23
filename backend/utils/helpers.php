@@ -86,3 +86,34 @@ function methodIs(string $method): bool
 {
     return strtoupper($_SERVER['REQUEST_METHOD']) === strtoupper($method);
 }
+
+/**
+ * Ownership checks shared by every endpoint that accepts a foreign-key id
+ * from client input (account_id, category_id, expense_group_id). Without
+ * these, a user could point their own transaction/budget at another
+ * user's category/group/account row (IDOR) — the id existing in the DB
+ * isn't enough, it must belong to the requesting user.
+ */
+function ownsAccount(PDO $db, int $userId, ?int $accountId): bool
+{
+    if (!$accountId) return true;
+    $stmt = $db->prepare('SELECT id FROM accounts WHERE id = ? AND user_id = ?');
+    $stmt->execute([$accountId, $userId]);
+    return (bool) $stmt->fetch();
+}
+
+function ownsCategory(PDO $db, int $userId, ?int $categoryId): bool
+{
+    if (!$categoryId) return true;
+    $stmt = $db->prepare('SELECT id FROM categories WHERE id = ? AND user_id = ?');
+    $stmt->execute([$categoryId, $userId]);
+    return (bool) $stmt->fetch();
+}
+
+function ownsGroup(PDO $db, int $userId, ?int $groupId): bool
+{
+    if (!$groupId) return true;
+    $stmt = $db->prepare('SELECT id FROM expense_groups WHERE id = ? AND user_id = ?');
+    $stmt->execute([$groupId, $userId]);
+    return (bool) $stmt->fetch();
+}

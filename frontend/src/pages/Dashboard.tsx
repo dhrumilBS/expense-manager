@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { DashboardData } from '@/types';
 import { formatMoney, formatDate } from '@/lib/format';
@@ -7,6 +8,8 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts';
+import QuickBills from '@/components/ui/QuickBills';
+import { QUICK_BILLS, QuickBillDef } from '@/lib/quickBills';
 
 const TYPE_ICON = { income: ArrowUpCircle, expense: ArrowDownCircle, transfer: ArrowLeftRight };
 const TYPE_CLASS = { income: 'amount-income', expense: 'amount-expense', transfer: 'amount-transfer' };
@@ -14,11 +17,26 @@ const TYPE_BG = { income: 'bg-income/10', expense: 'bg-expense/10', transfer: 'b
 const TYPE_TEXT = { income: 'text-income', expense: 'text-expense', transfer: 'text-transfer' };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const handleQuickBill = (bill: QuickBillDef) => {
+    navigate('/transactions', { state: { openAdd: 'expense', billKey: bill.key } });
+  };
+
   useEffect(() => {
-    api.get('/dashboard.php').then((res) => setData(res.data)).finally(() => setLoading(false));
+    api.get('/dashboard.php')
+      .then((res) => setData({
+        ...res.data,
+        top_categories: res.data.top_categories ?? [],
+        spending_by_group: res.data.spending_by_group ?? [],
+        income_vs_expense_trend: res.data.income_vs_expense_trend ?? [],
+        recent_transactions: res.data.recent_transactions ?? [],
+        upcoming_bills: res.data.upcoming_bills ?? [],
+      }))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <SkeletonDashboard />;
@@ -31,6 +49,18 @@ export default function Dashboard() {
       <div>
         <h1 className="font-display text-2xl font-semibold">Dashboard</h1>
         <p className="text-sm text-muted">Here's where your money stands this month.</p>
+      </div>
+
+      {/* Quick add */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-medium text-muted mb-2">Daily</p>
+          <QuickBills bills={QUICK_BILLS.filter((b) => b.group === 'daily')} onSelect={handleQuickBill} />
+        </div>
+        <div>
+          <p className="text-xs font-medium text-muted mb-2">Bill Pay</p>
+          <QuickBills bills={QUICK_BILLS.filter((b) => b.group === 'bill')} onSelect={handleQuickBill} />
+        </div>
       </div>
 
       {/* Top stat cards */}

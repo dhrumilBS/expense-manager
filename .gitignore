@@ -3,4 +3,5 @@ dist/
 .env
 backend/uploads/receipts/*
 !backend/uploads/receipts/.gitkeep
+backend/config/.jwt_secret
 *.log
