@@ -1,0 +1,14 @@
+# Deny access to sensitive folders directly over HTTP
+<IfModule mod_authz_core.c>
+  <FilesMatch "\.(sql|md)$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  <FilesMatch "\.(sql|md)$">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>
+
+Options -Indexes

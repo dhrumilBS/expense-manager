@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-paper; }
+  ::selection { @apply bg-brand/20; }
+  :focus-visible { outline: 2px solid #0B6E4F; outline-offset: 2px; }
+}
+
+@layer utilities {
+  /* The signature: every amount in the app renders in tabular mono figures,
+     color-coded by transaction type — the "ledger ink" convention. */
+  .amount {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .amount-income { color: #0B8457; }
+  .amount-expense { color: #B33A3A; }
+  .amount-transfer { color: #3B5BA9; }
+
+  .card {
+    @apply bg-surface rounded-2xl shadow-soft border border-line/60 p-5;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
+  .btn-secondary { @apply btn bg-ink/5 text-ink hover:bg-ink/10; }
+  .btn-ghost { @apply btn hover:bg-ink/5 text-ink; }
+  .btn-danger { @apply btn bg-expense/10 text-expense hover:bg-expense/20; }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-colors;
+  }
+  .label { @apply text-xs font-medium text-muted mb-1 block; }
+}
