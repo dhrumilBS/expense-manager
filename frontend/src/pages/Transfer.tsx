@@ -7,6 +7,7 @@ import { api, apiErrorMessage } from '@/lib/api';
 import { todayInputValue, formatMoney, formatDateTime } from '@/lib/format';
 import { ArrowLeftRight } from 'lucide-react';
 import { Transaction } from '@/types';
+import AmountInput from '@/components/ui/AmountInput';
 
 const schema = z.object({
   amount: z.coerce.number().positive('Enter an amount greater than zero'),
@@ -26,7 +27,7 @@ export default function Transfer() {
   const [success, setSuccess] = useState(false);
   const [recent, setRecent] = useState<Transaction[]>([]);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { txn_date: todayInputValue() },
   });
@@ -34,7 +35,9 @@ export default function Transfer() {
   useEffect(() => { refreshAll(); loadRecent(); }, [refreshAll]);
 
   const loadRecent = () => {
-    api.get('/transactions.php', { params: { type: 'transfer', limit: 8 } }).then((r) => setRecent(r.data.transactions));
+    api.get('/transactions.php', { params: { type: 'transfer', limit: 8 } })
+      .then((r) => setRecent(r.data.transactions ?? []))
+      .catch(() => setRecent([]));
   };
 
   const onSubmit = async (data: FormData) => {
@@ -60,7 +63,7 @@ export default function Transfer() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="label">Amount</label>
-            <input className="input amount" type="number" step="0.01" placeholder="0.00" {...register('amount')} />
+            <AmountInput value={watch('amount')} onChange={(n) => setValue('amount', n, { shouldValidate: true })} />
             {errors.amount && <p className="text-xs text-expense mt-1">{errors.amount.message}</p>}
           </div>
 

@@ -36,13 +36,17 @@ if (methodIs('POST')) {
     $amount = (float)($b['amount'] ?? 0);
     $month = (int)($b['period_month'] ?? date('n'));
     $year = (int)($b['period_year'] ?? date('Y'));
+    $categoryId = isset($b['category_id']) ? (int)$b['category_id'] : null;
+    $expenseGroupId = isset($b['expense_group_id']) ? (int)$b['expense_group_id'] : null;
     if ($amount <= 0) sendError('Budget amount must be greater than zero.', 422);
     if ($month < 1 || $month > 12) sendError('Invalid month.', 422);
+    if (!ownsCategory($db, $userId, $categoryId)) sendError('Category not found.', 404);
+    if (!ownsGroup($db, $userId, $expenseGroupId)) sendError('Expense group not found.', 404);
 
     $stmt = $db->prepare('INSERT INTO budgets (user_id, category_id, expense_group_id, amount, period_month, period_year)
                           VALUES (?,?,?,?,?,?)
                           ON DUPLICATE KEY UPDATE amount = VALUES(amount)');
-    $stmt->execute([$userId, $b['category_id'] ?? null, $b['expense_group_id'] ?? null, $amount, $month, $year]);
+    $stmt->execute([$userId, $categoryId, $expenseGroupId, $amount, $month, $year]);
     sendSuccess(['id' => (int)$db->lastInsertId()], 201);
 }
 

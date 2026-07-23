@@ -20,13 +20,13 @@ export default function Analytics() {
   const [yoy, setYoy] = useState<any[]>([]);
 
   useEffect(() => {
-    api.get('/analytics.php', { params: { action: 'monthly_trend' } }).then((r) => setTrend(r.data.monthly_trend));
-    api.get('/analytics.php', { params: { action: 'expense_by_category', year } }).then((r) => setByCategory(r.data.expense_by_category));
-    api.get('/analytics.php', { params: { action: 'expense_by_group', year } }).then((r) => setByGroup(r.data.expense_by_group));
-    api.get('/analytics.php', { params: { action: 'budget_vs_actual' } }).then((r) => setBudgetVsActual(r.data.budget_vs_actual));
-    api.get('/analytics.php', { params: { action: 'spending_heatmap', year } }).then((r) => setHeatmap(r.data.spending_heatmap));
-    api.get('/analytics.php', { params: { action: 'highest_expenses', limit: 8 } }).then((r) => setHighest(r.data.highest_expenses));
-    api.get('/analytics.php', { params: { action: 'year_over_year', year } }).then((r) => setYoy(r.data.year_over_year));
+    api.get('/analytics.php', { params: { action: 'monthly_trend' } }).then((r) => setTrend(r.data.monthly_trend ?? [])).catch(() => setTrend([]));
+    api.get('/analytics.php', { params: { action: 'expense_by_category', year } }).then((r) => setByCategory(r.data.expense_by_category ?? [])).catch(() => setByCategory([]));
+    api.get('/analytics.php', { params: { action: 'expense_by_group', year } }).then((r) => setByGroup(r.data.expense_by_group ?? [])).catch(() => setByGroup([]));
+    api.get('/analytics.php', { params: { action: 'budget_vs_actual' } }).then((r) => setBudgetVsActual(r.data.budget_vs_actual ?? [])).catch(() => setBudgetVsActual([]));
+    api.get('/analytics.php', { params: { action: 'spending_heatmap', year } }).then((r) => setHeatmap(r.data.spending_heatmap ?? [])).catch(() => setHeatmap([]));
+    api.get('/analytics.php', { params: { action: 'highest_expenses', limit: 8 } }).then((r) => setHighest(r.data.highest_expenses ?? [])).catch(() => setHighest([]));
+    api.get('/analytics.php', { params: { action: 'year_over_year', year } }).then((r) => setYoy(r.data.year_over_year ?? [])).catch(() => setYoy([]));
   }, [year]);
 
   const maxHeat = Math.max(1, ...heatmap.map((h) => Number(h.total)));

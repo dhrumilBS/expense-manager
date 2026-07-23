@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { api, apiErrorMessage } from '@/lib/api';
 import Modal from '@/components/ui/Modal';
+import SwipeToReveal from '@/components/ui/SwipeToReveal';
+import AmountInput from '@/components/ui/AmountInput';
 import { Plus, Trash2 } from 'lucide-react';
 import { Budget } from '@/types';
 import { formatMoney } from '@/lib/format';
@@ -25,7 +27,10 @@ export default function Budgets() {
 
   const load = () => {
     setLoading(true);
-    api.get('/budgets.php', { params: { month, year } }).then((r) => setBudgets(r.data.budgets)).finally(() => setLoading(false));
+    api.get('/budgets.php', { params: { month, year } })
+      .then((r) => setBudgets(r.data.budgets ?? []))
+      .catch(() => setBudgets([]))
+      .finally(() => setLoading(false));
   };
 
   const save = async () => {
@@ -84,22 +89,28 @@ export default function Budgets() {
           const over = spent > amount;
           const label = b.category_name || b.group_name || 'Overall Budget';
           return (
-            <div key={b.id} className="card group">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium flex items-center gap-2">
-                  {b.category_color && <span className="w-2 h-2 rounded-full" style={{ background: b.category_color }} />}
-                  {label}
-                </span>
-                <button onClick={() => remove(b.id)} className="hidden group-hover:block p-1 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Trash2 size={14} /></button>
+            <SwipeToReveal
+              key={b.id}
+              className="rounded-2xl"
+              actions={[{ icon: <Trash2 size={16} />, label: 'Delete', onClick: () => remove(b.id), className: 'bg-expense text-white' }]}
+            >
+              <div className="card group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium flex items-center gap-2">
+                    {b.category_color && <span className="w-2 h-2 rounded-full" style={{ background: b.category_color }} />}
+                    {label}
+                  </span>
+                  <button onClick={() => remove(b.id)} className="hidden md:group-hover:block p-2 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Trash2 size={14} /></button>
+                </div>
+                <div className="h-2.5 rounded-full bg-ink/5 overflow-hidden mb-2">
+                  <div className={`h-full rounded-full ${over ? 'bg-expense' : 'bg-brand'}`} style={{ width: `${pct}%` }} />
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className={`amount ${over ? 'text-expense' : 'text-ink'}`}>{formatMoney(spent)}</span>
+                  <span className="amount text-muted">of {formatMoney(amount)}</span>
+                </div>
               </div>
-              <div className="h-2.5 rounded-full bg-ink/5 overflow-hidden mb-2">
-                <div className={`h-full rounded-full ${over ? 'bg-expense' : 'bg-brand'}`} style={{ width: `${pct}%` }} />
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className={`amount ${over ? 'text-expense' : 'text-ink'}`}>{formatMoney(spent)}</span>
-                <span className="amount text-muted">of {formatMoney(amount)}</span>
-              </div>
-            </div>
+            </SwipeToReveal>
           );
         })}
       </div>
@@ -137,7 +148,7 @@ export default function Budgets() {
           )}
           <div>
             <label className="label">Monthly Amount</label>
-            <input className="input amount" type="number" step="0.01" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} />
+            <AmountInput value={form.amount} onChange={(n) => setForm((f) => ({ ...f, amount: String(n) }))} />
           </div>
           {error && <p className="text-sm text-expense bg-expense/10 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-2 pt-2">

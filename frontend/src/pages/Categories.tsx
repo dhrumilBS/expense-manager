@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { api, apiErrorMessage } from '@/lib/api';
 import Modal from '@/components/ui/Modal';
+import SwipeToReveal from '@/components/ui/SwipeToReveal';
 import { Plus, Pencil, Trash2, Circle } from 'lucide-react';
 import { Category } from '@/types';
 
@@ -61,16 +62,25 @@ export default function Categories() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {list.map((c) => (
-          <div key={c.id} className="card flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: c.color + '1A', color: c.color }}>
-              <Circle size={16} fill={c.color} strokeWidth={0} />
+          <SwipeToReveal
+            key={c.id}
+            className="rounded-2xl"
+            actions={[
+              { icon: <Pencil size={16} />, label: 'Edit', onClick: () => openEdit(c), className: 'bg-ink/5 text-ink' },
+              { icon: <Trash2 size={16} />, label: 'Delete', onClick: () => remove(c.id), className: 'bg-expense text-white' },
+            ]}
+          >
+            <div className="card flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: c.color + '1A', color: c.color }}>
+                <Circle size={16} fill={c.color} strokeWidth={0} />
+              </div>
+              <div className="flex-1 min-w-0"><p className="font-medium truncate">{c.name}</p></div>
+              <div className="hidden md:group-hover:flex gap-1">
+                <button onClick={() => openEdit(c)} className="p-2 rounded-lg hover:bg-ink/5 text-muted"><Pencil size={15} /></button>
+                <button onClick={() => remove(c.id)} className="p-2 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Trash2 size={15} /></button>
+              </div>
             </div>
-            <div className="flex-1 min-w-0"><p className="font-medium truncate">{c.name}</p></div>
-            <div className="hidden group-hover:flex gap-1">
-              <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted"><Pencil size={15} /></button>
-              <button onClick={() => remove(c.id)} className="p-1.5 rounded-lg hover:bg-expense/10 text-muted hover:text-expense"><Trash2 size={15} /></button>
-            </div>
-          </div>
+          </SwipeToReveal>
         ))}
         {list.length === 0 && <p className="text-sm text-muted col-span-full text-center py-10">No {tab} categories yet.</p>}
       </div>
