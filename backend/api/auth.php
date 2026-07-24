@@ -60,6 +60,20 @@ if (methodIs('GET') && $action === 'me') {
     sendSuccess(['user' => $user]);
 }
 
+if (methodIs('PUT') && $action === 'theme') {
+    $userId = requireAuth();
+    $body = jsonInput();
+    $theme = $body['theme'] ?? '';
+
+    if (!in_array($theme, ['light', 'dark'], true)) {
+        sendError('Theme must be "light" or "dark".', 422);
+    }
+
+    $stmt = $db->prepare('UPDATE users SET theme = ? WHERE id = ?');
+    $stmt->execute([$theme, $userId]);
+    sendSuccess(['theme' => $theme]);
+}
+
 sendError('Unknown auth action', 404);
 
 /** Give every new user a working starter set of groups/categories/accounts. */

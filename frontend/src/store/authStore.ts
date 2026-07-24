@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { User } from '@/types';
 import { api, apiErrorMessage } from '@/lib/api';
+import { useThemeStore } from '@/store/themeStore';
+
+/** Only adopt the account's saved theme if this browser has no local choice yet — avoids clobbering a preference the user just set on this device. */
+function adoptAccountTheme(user: User) {
+  if (!localStorage.getItem('em_theme')) {
+    useThemeStore.getState().setTheme(user.theme, { sync: false });
+  }
+}
 
 interface AuthState {
   user: User | null;
@@ -23,7 +31,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     const token = sessionStorage.getItem('em_token');
     const userRaw = sessionStorage.getItem('em_user');
     if (token && userRaw) {
-      set({ token, user: JSON.parse(userRaw) });
+      const user = JSON.parse(userRaw);
+      adoptAccountTheme(user);
+      set({ token, user });
     }
   },
 
@@ -33,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data } = await api.post('/auth.php?action=login', { email, password });
       sessionStorage.setItem('em_token', data.token);
       sessionStorage.setItem('em_user', JSON.stringify(data.user));
+      adoptAccountTheme(data.user);
       set({ user: data.user, token: data.token, loading: false });
     } catch (err) {
       set({ loading: false, error: apiErrorMessage(err, 'Could not log in.') });
@@ -46,6 +57,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data } = await api.post('/auth.php?action=register', { name, email, password });
       sessionStorage.setItem('em_token', data.token);
       sessionStorage.setItem('em_user', JSON.stringify(data.user));
+      adoptAccountTheme(data.user);
       set({ user: data.user, token: data.token, loading: false });
     } catch (err) {
       set({ loading: false, error: apiErrorMessage(err, 'Could not create account.') });

@@ -2,10 +2,13 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ArrowLeftRight, FolderKanban, Plus,
   Tags, Wallet, PiggyBank, FileBarChart, BarChart3, Settings, LogOut, Receipt, Menu,
+  Sun, Moon, Calculator,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore } from '@/store/themeStore';
 import { useState } from 'react';
 import clsx from 'clsx';
+import MiniCalculator from '@/components/ui/MiniCalculator';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -27,21 +30,23 @@ const TAB_BAR = [
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex bg-paper">
       {/* Sidebar — always visible on desktop, off-canvas "More" panel on mobile */}
       <aside className={clsx(
-        'fixed z-30 inset-y-0 left-0 w-64 bg-surface border-r border-line transform transition-transform lg:translate-x-0 lg:static',
+        'fixed z-30 inset-y-0 left-0 w-64 h-dvh flex flex-col bg-surface border-r border-line transform transition-transform lg:translate-x-0 lg:static',
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
-        <div className="h-16 flex items-center gap-2 px-5 border-b border-line">
+        <div className="h-16 shrink-0 flex items-center gap-2 px-5 border-b border-line">
           <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-display font-semibold">₹</div>
           <span className="font-display text-lg font-semibold tracking-tight">Ledger</span>
         </div>
-        <nav className="p-3 space-y-0.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 4rem - 4rem)' }}>
+        <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-0.5">
           {NAV.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -58,7 +63,8 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-line">
+        <div className="relative shrink-0 p-3 border-t border-line">
+          {calcOpen && <MiniCalculator onClose={() => setCalcOpen(false)} />}
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-sm font-semibold">
               {user?.name?.[0]?.toUpperCase() ?? 'U'}
@@ -67,6 +73,23 @@ export default function Layout() {
               <p className="text-sm font-medium truncate">{user?.name}</p>
               <p className="text-xs text-muted truncate">{user?.email}</p>
             </div>
+            <button
+              onClick={() => setCalcOpen((v) => !v)}
+              className={clsx(
+                'p-2 rounded-lg transition-colors',
+                calcOpen ? 'bg-brand/10 text-brand' : 'hover:bg-ink/5 text-muted hover:text-ink'
+              )}
+              title="Quick calculator"
+            >
+              <Calculator size={16} />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             <button
               onClick={() => { logout(); navigate('/login'); }}
               className="p-2 rounded-lg hover:bg-expense/10 text-muted hover:text-expense transition-colors"

@@ -77,7 +77,7 @@ export default function Transactions() {
   const remove = async (id: number) => {
     if (!confirm('Delete this transaction? Account balances will be adjusted.')) return;
     await api.delete('/transactions.php', { params: { id } });
-    load();
+    if (page > 1 && txns.length === 1) setPage((p) => p - 1); else load();
     refreshAll();
   };
 
@@ -198,7 +198,15 @@ export default function Transactions() {
           initialCategoryId={prefill.categoryId}
           initialDescription={prefill.description}
           onCancel={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); load(); refreshAll(); }}
+          onSaved={() => {
+            setModalOpen(false);
+            // Jump back to page 1 (newest-first sort) and drop a Type filter that would
+            // hide the transaction just saved — otherwise it's added but invisible.
+            setPage(1);
+            setFilters((f) => (f.type && f.type !== addType ? { ...f, type: '' } : f));
+            load();
+            refreshAll();
+          }}
         />
       </Modal>
     </div>

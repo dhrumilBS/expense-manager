@@ -17,11 +17,7 @@ export const QUICK_BILLS: QuickBillDef[] = [
   // Recurring bills
   { key: 'electricity', label: 'Electricity', categoryName: 'Electricity', icon: 'Zap', color: '#C08A00', group: 'bill' },
   { key: 'gas', label: 'Gas', categoryName: 'Gas', icon: 'Flame', color: '#B3541E', group: 'bill' },
-  { key: 'water', label: 'Water', categoryName: 'Water', icon: 'Droplet', color: '#3B5BA9', group: 'bill' },
   { key: 'mobile', label: 'Mobile', categoryName: 'Mobile Recharge', icon: 'Smartphone', color: '#3B5BA9', group: 'bill' },
-  { key: 'internet', label: 'Internet', categoryName: 'Internet', icon: 'Wifi', color: '#3B5BA9', group: 'bill' },
-  { key: 'dth', label: 'DTH/Cable', categoryName: 'DTH/Cable', icon: 'Tv', color: '#7A3FB3', group: 'bill' },
-  { key: 'rent', label: 'Rent', categoryName: 'Rent', icon: 'Home', color: '#6D4AFF', group: 'bill' },
   { key: 'emi', label: 'EMI', categoryName: 'EMI', icon: 'CreditCard', color: '#946200', group: 'bill' },
   { key: 'insurance', label: 'Insurance', categoryName: 'Insurance', icon: 'ShieldCheck', color: '#2E7D5B', group: 'bill' },
 ];

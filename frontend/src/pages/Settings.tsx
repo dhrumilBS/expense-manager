@@ -1,15 +1,18 @@
 import { useAuthStore } from '@/store/authStore';
-import { LogOut, User, CircleDollarSign, Sparkles } from 'lucide-react';
+import { useThemeStore } from '@/store/themeStore';
+import { LogOut, User, CircleDollarSign, Sparkles, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 
 const ROADMAP = [
   'Recurring Transactions', 'Subscription Tracker', 'EMI Tracker', 'Loan Tracker',
   'Savings Goals', 'Split Expenses', 'Bill Reminders', 'OCR Receipt Scanner',
-  'Dark Mode', 'Multi-Currency', 'Cloud Backup', 'PWA Support', 'Multi-User Support',
+  'Multi-Currency', 'Cloud Backup', 'PWA Support', 'Multi-User Support',
 ];
 
 export default function Settings() {
   const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useThemeStore();
   const navigate = useNavigate();
 
   return (
@@ -17,6 +20,31 @@ export default function Settings() {
       <div>
         <h1 className="font-display text-2xl font-semibold">Settings</h1>
         <p className="text-sm text-muted">Your profile and what's coming next.</p>
+      </div>
+
+      <div className="card">
+        <h3 className="font-medium mb-4 flex items-center gap-2"><Sun size={17} /> Appearance</h3>
+        <div className="inline-flex rounded-xl border border-line p-1 gap-1">
+          <button
+            onClick={() => setTheme('light')}
+            className={clsx(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              theme === 'light' ? 'bg-brand/10 text-brand' : 'text-muted hover:text-ink'
+            )}
+          >
+            <Sun size={15} /> Light
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={clsx(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              theme === 'dark' ? 'bg-brand/10 text-brand' : 'text-muted hover:text-ink'
+            )}
+          >
+            <Moon size={15} /> Dark
+          </button>
+        </div>
+        <p className="text-xs text-muted mt-2">Saved to your account, so it follows you when you sign in elsewhere.</p>
       </div>
 
       <div className="card">
